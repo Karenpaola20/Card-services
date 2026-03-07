@@ -24,9 +24,17 @@ resource "aws_iam_role_policy" "card_lambda_policy" {
         {
             Effect = "Allow"
             Action = [
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
                 "dynamodb:PutItem"
             ]
-            Resource = aws_dynamodb_table.card_table.arn
+            Resource = [
+                aws_dynamodb_table.card_table.arn,
+                "${aws_dynamodb_table.card_table.arn}/*",
+                aws_dynamodb_table.transaction_table.arn,
+                "${aws_dynamodb_table.transaction_table.arn}/*"
+            ]
         },
         {
             Effect = "Allow"
