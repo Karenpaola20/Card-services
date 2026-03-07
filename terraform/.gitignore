@@ -1,0 +1,26 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variables sensibles
+*.tfvars
+*.tfvars.json
+
+# Node
+node_modules/
+npm-debug.log
+
+# Lambda build artifacts
+*.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

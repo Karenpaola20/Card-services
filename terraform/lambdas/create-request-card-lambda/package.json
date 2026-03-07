@@ -1,0 +1,12 @@
+{
+  "name": "card-approval-worker",
+  "version": "1.0.0",
+  "description": "Lambda to process card requests from SQS",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "uuid": "^9.0.1"
+  }
+}
