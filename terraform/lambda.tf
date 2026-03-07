@@ -14,6 +14,7 @@ resource "aws_lambda_function" "card_approval_worker" {
   environment {
     variables = {
       CARD_TABLE = aws_dynamodb_table.card_table.name
+      TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
     }
   }
 }
@@ -45,6 +46,28 @@ resource "aws_lambda_function" "card_transaction_save_lambda" {
   }
 }
 
+resource "aws_lambda_function" "purchase_lambda" {
+
+  function_name = "purchase-lambda"
+
+  role = aws_iam_role.card_lambda_role.arn
+
+  handler = "index.handler"
+  runtime = "nodejs20.x"
+
+  timeout = 10
+
+  filename = "${path.module}/lambdas/card-purchase-lambda/purchase.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambdas/card-purchase-lambda/purchase.zip")
+
+  environment {
+    variables = {
+      CARD_TABLE        = aws_dynamodb_table.card_table.name
+      TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
+    }
+  }
+}
+
 resource "aws_api_gateway_integration" "transaction_integration" {
 
   rest_api_id = aws_api_gateway_rest_api.transaction_api.id
@@ -63,5 +86,16 @@ resource "aws_lambda_permission" "apigw_transaction_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.card_transaction_save_lambda.function_name
   principal     = "apigateway.amazonaws.com"
+
+}
+
+resource "aws_lambda_permission" "purchase_permission" {
+
+  statement_id  = "AllowAPIGatewayInvokePurchase"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.purchase_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
 
 }
