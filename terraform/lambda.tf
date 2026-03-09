@@ -28,6 +28,7 @@ resource "aws_lambda_event_source_mapping" "card_sqs_trigger" {
   batch_size = 1
 }
 
+//Save
 resource "aws_lambda_function" "card_transaction_save_lambda" {
   function_name = "card-transaction-save-lambda"
 
@@ -43,6 +44,7 @@ resource "aws_lambda_function" "card_transaction_save_lambda" {
     variables = {
       CARD_TABLE        = aws_dynamodb_table.card_table.name
       TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
+      NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
     }
   }
 }
@@ -136,7 +138,7 @@ resource "aws_lambda_permission" "card_activate_permission" {
   source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
 }
 
-//Save
+//Paid
 resource "aws_lambda_function" "card_paid_credit_card_lambda" {
   function_name = "card-paid-credit-card-lambda"
   role          = aws_iam_role.card_lambda_role.arn

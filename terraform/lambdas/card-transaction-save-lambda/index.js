@@ -6,9 +6,11 @@ import {
   PutCommand
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
+const sqs = new SQSClient({});
 
 export const handler = async (event) => {
   try {
@@ -103,6 +105,22 @@ export const handler = async (event) => {
     await dynamo.send(new PutCommand({
       TableName: process.env.TRANSACTION_TABLE,
       Item: transaction
+    }));
+
+    const notificationMessage = {
+      type: "TRANSACTION.SAVE",
+      data: {
+        date: transaction.createdAt,
+        email: "kbuelvas899@gmail.com",
+        merchant: body.merchant,
+        amount: amount,
+        userId: card.user_id
+      }
+    };
+
+    await sqs.send(new SendMessageCommand({
+      QueueUrl: process.env.NOTIFICATION_QUEUE_URL,
+      MessageBody: JSON.stringify(notificationMessage)
     }));
 
     return {
