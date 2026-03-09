@@ -49,7 +49,7 @@ export const handler = async (event) => {
 
     const transactions = await dynamo.send(new QueryCommand({
       TableName: process.env.TRANSACTION_TABLE,
-      IndexName: "cardId-index",
+      IndexName: "cardId-createdAt-index",
       KeyConditionExpression: "cardId = :cardId",
       FilterExpression: "#type = :purchase",
       ExpressionAttributeNames: {
