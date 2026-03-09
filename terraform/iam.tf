@@ -27,13 +27,15 @@ resource "aws_iam_role_policy" "card_lambda_policy" {
                 "dynamodb:Query",
                 "dynamodb:GetItem",
                 "dynamodb:UpdateItem",
-                "dynamodb:PutItem"
+                "dynamodb:PutItem",
+                "dynamodb:Scan"
             ]
             Resource = [
                 aws_dynamodb_table.card_table.arn,
                 "${aws_dynamodb_table.card_table.arn}/*",
                 aws_dynamodb_table.transaction_table.arn,
-                "${aws_dynamodb_table.transaction_table.arn}/*"
+                "${aws_dynamodb_table.transaction_table.arn}/*",
+                "${aws_dynamodb_table.transaction_table.arn}/index/*"
             ]
         },
         {
@@ -41,9 +43,10 @@ resource "aws_iam_role_policy" "card_lambda_policy" {
             Action = [
                 "sqs:ReceiveMessage",
                 "sqs:DeleteMessage",
-                "sqs:GetQueueAttributes"
+                "sqs:GetQueueAttributes",
+                "sqs:SendMessage"
             ]
-            Resource = aws_sqs_queue.create_request_card_sqs.arn
+            Resource = "arn:aws:sqs:us-east-1:537236557851:notification-email-sqs"
         },
         {
             Effect = "Allow"

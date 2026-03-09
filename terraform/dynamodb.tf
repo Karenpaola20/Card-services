@@ -17,8 +17,9 @@ resource "aws_dynamodb_table" "card_table" {
 }
 
 resource "aws_dynamodb_table" "transaction_table" {
-  name          = "transaction-table"
-  billing_mode  = "PAY_PER_REQUEST"
+
+  name         = "transaction-table"
+  billing_mode = "PAY_PER_REQUEST"
 
   hash_key  = "uuid"
   range_key = "createdAt"
@@ -32,4 +33,18 @@ resource "aws_dynamodb_table" "transaction_table" {
     name = "createdAt"
     type = "S"
   }
+
+  attribute {
+    name = "cardId"
+    type = "S"
+  }
+
+  global_secondary_index {
+
+    name            = "cardId-index"
+    hash_key        = "cardId"
+    projection_type = "ALL"
+
+  }
+
 }
