@@ -41,6 +41,14 @@ resource "aws_iam_role_policy" "card_lambda_policy" {
         {
             Effect = "Allow"
             Action = [
+                "s3:PutObject",
+                "s3:GetObject"
+            ]
+            Resource = "${aws_s3_bucket.transactions_report_bucket.arn}/*"
+        },
+        {
+            Effect = "Allow"
+            Action = [
                 "sqs:ReceiveMessage",
                 "sqs:DeleteMessage",
                 "sqs:GetQueueAttributes",

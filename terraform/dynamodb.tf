@@ -41,10 +41,10 @@ resource "aws_dynamodb_table" "transaction_table" {
 
   global_secondary_index {
 
-    name            = "cardId-index"
+    name            = "cardId-createdAt-index"
     hash_key        = "cardId"
+    range_key       = "createdAt"
     projection_type = "ALL"
 
   }
-
 }

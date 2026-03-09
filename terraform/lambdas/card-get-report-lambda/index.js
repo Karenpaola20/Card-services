@@ -1,30 +1,31 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  QueryCommand
-} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+import crypto from "crypto";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-const ses = new SESClient({});
+const s3 = new S3Client({});
+const sqs = new SQSClient({});
 
 export const handler = async (event) => {
 
   try {
 
     const cardId = event.pathParameters?.card_id;
-
     const { start, end } = event.queryStringParameters || {};
 
     if (!start || !end) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: "Start and end are required"
-            })
-        }
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: "Start and end are required"
+        })
+      };
     }
 
     const result = await dynamo.send(new QueryCommand({
@@ -43,41 +44,46 @@ export const handler = async (event) => {
     let csv = "uuid,merchant,amount,type,createdAt\n";
 
     for (const t of transactions) {
-
       csv += `${t.uuid},${t.merchant},${t.amount},${t.type},${t.createdAt}\n`;
-
     }
 
-    const emailParams = {
+    const fileName = `reports/${crypto.randomUUID()}.csv`;
 
-      Source: process.env.SES_EMAIL,
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.REPORT_BUCKET,
+      Key: fileName,
+      Body: csv,
+      ContentType: "text/csv"
+    }));
 
-      Destination: {
-        ToAddresses: ["kbuelvas899@gmail.com"]
-      },
+    const command = new GetObjectCommand({
+      Bucket: process.env.REPORT_BUCKET,
+      Key: fileName
+    });
 
-      Message: {
+    const url = await getSignedUrl(s3, command, {
+      expiresIn: 3600
+    });
 
-        Subject: {
-          Data: "Card Transactions Report"
-        },
-
-        Body: {
-          Text: {
-            Data: `Transactions report\n\n${csv}`
-          }
-        }
-
+    const notificationMessage = {
+      type: "REPORT.ACTIVITY",
+      data: {
+        email: "kbuelvas899@gmail.com",
+        date: new Date().toISOString(),
+        url: url
       }
-
     };
 
-    await ses.send(new SendEmailCommand(emailParams));
+    await sqs.send(new SendMessageCommand({
+      QueueUrl: process.env.NOTIFICATION_QUEUE_URL,
+      MessageBody: JSON.stringify(notificationMessage)
+    }));
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "Report sent to email"
+        message: "Report generated successfully",
+        url: url
       })
     };
 
@@ -88,10 +94,9 @@ export const handler = async (event) => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        message: "Internal server error"
+        message: "Internal server error",
+        error: error.message
       })
     };
-
   }
-
 };

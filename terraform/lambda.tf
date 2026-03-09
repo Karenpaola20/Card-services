@@ -182,6 +182,7 @@ resource "aws_lambda_function" "card_get_report_lambda" {
   environment {
     variables = {
       TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
+      REPORT_BUCKET = aws_s3_bucket.transactions_report_bucket.bucket
       NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
     }
   }
