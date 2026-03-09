@@ -97,6 +97,7 @@ resource "aws_lambda_function" "purchase_lambda" {
     variables = {
       CARD_TABLE        = aws_dynamodb_table.card_table.name
       TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
+      NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
     }
   }
 }
