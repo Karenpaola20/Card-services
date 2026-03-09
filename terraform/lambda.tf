@@ -60,11 +60,12 @@ resource "aws_api_gateway_integration" "transaction_integration" {
 
 resource "aws_lambda_permission" "apigw_transaction_lambda" {
 
-  statement_id  = "AllowAPIGatewayInvoke"
+  statement_id  = "AllowAPIGatewayInvokeTransaction"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.card_transaction_save_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-
+  
+  source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
 }
 
 //Purchase
@@ -118,9 +119,9 @@ resource "aws_lambda_function" "card_activate_lambda" {
 
   environment {
     variables = {
-      CARD_TABLE = aws_dynamodb_table.card_table.name
-      TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
-      NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
+      CARD_TABLE              = aws_dynamodb_table.card_table.name
+      TRANSACTION_TABLE       = aws_dynamodb_table.transaction_table.name
+      NOTIFICATION_QUEUE_URL  = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
     }
   }
 }
@@ -130,6 +131,34 @@ resource "aws_lambda_permission" "card_activate_permission" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.card_activate_lambda.function_name
   principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
+}
+
+//Save
+resource "aws_lambda_function" "card_paid_credit_card_lambda" {
+  function_name = "card-paid-credit-card-lambda"
+  role          = aws_iam_role.card_lambda_role.arn
+  handler       = "index.handler"
+  runtime       = "nodejs20.x"
+
+  filename = "${path.module}/lambdas/card-paid-credit-card-lambda/card-paid-credit-card.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambdas/card-paid-credit-card-lambda/card-paid-credit-card.zip")
+
+  environment {
+    variables = {
+      CARD_TABLE             = aws_dynamodb_table.card_table.name
+      TRANSACTION_TABLE      = aws_dynamodb_table.transaction_table.name
+      NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
+    }
+  }
+}
+
+resource "aws_lambda_permission" "card_paid_permission" {
+  statement_id = "AllowAPIGatewayInvokeCardPaid"
+  action = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.card_paid_credit_card_lambda.function_name
+  principal = "apigateway.amazonaws.com"
 
   source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
 }

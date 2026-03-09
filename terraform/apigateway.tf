@@ -47,14 +47,18 @@ resource "aws_api_gateway_deployment" "transaction_deployment" {
       aws_api_gateway_resource.purchase.id,
       aws_api_gateway_resource.card.id,
       aws_api_gateway_resource.card_activate.id,
+      aws_api_gateway_resource.card_pay.id,
+      aws_api_gateway_resource.card_pay_card_id.id,
 
       aws_api_gateway_method.transaction_post.id,
       aws_api_gateway_method.purchase_post.id,
       aws_api_gateway_method.card_activate_post.id,
+      aws_api_gateway_method.card_pay_post.id,
 
       aws_api_gateway_integration.transaction_integration.id,
       aws_api_gateway_integration.purchase_integration.id,
-      aws_api_gateway_integration.card_activate_integration.id
+      aws_api_gateway_integration.card_activate_integration.id,
+      aws_api_gateway_integration.card_pay_integration.id,
     ]))
   }
 
@@ -135,4 +139,37 @@ resource "aws_api_gateway_integration" "card_activate_integration" {
   type = "AWS_PROXY"
 
   uri = aws_lambda_function.card_activate_lambda.invoke_arn
+}
+
+//Save
+resource "aws_api_gateway_resource" "card_pay" {
+  rest_api_id = aws_api_gateway_rest_api.transaction_api.id
+  parent_id   = aws_api_gateway_resource.card.id
+  path_part   = "paid"
+}
+
+resource "aws_api_gateway_resource" "card_pay_card_id" {
+
+  rest_api_id = aws_api_gateway_rest_api.transaction_api.id
+  parent_id   = aws_api_gateway_resource.card_pay.id
+  path_part   = "{card_id}"
+
+}
+
+resource "aws_api_gateway_method" "card_pay_post" {
+  rest_api_id   = aws_api_gateway_rest_api.transaction_api.id
+  resource_id   = aws_api_gateway_resource.card_pay_card_id.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "card_pay_integration" {
+  rest_api_id = aws_api_gateway_rest_api.transaction_api.id
+  resource_id = aws_api_gateway_resource.card_pay_card_id.id
+  http_method = aws_api_gateway_method.card_pay_post.http_method
+
+  integration_http_method = "POST"
+  type = "AWS_PROXY"
+  
+  uri = aws_lambda_function.card_paid_credit_card_lambda.invoke_arn
 }
