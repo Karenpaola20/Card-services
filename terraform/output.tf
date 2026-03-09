@@ -17,3 +17,7 @@ output "card_activate_endpoint" {
 output "card_pay_endpoint" {
   value = "${aws_api_gateway_stage.transaction_stage.invoke_url}/card/paid/{card_id}"
 }
+
+output "card_report_endpoint" {
+  value = "${aws_api_gateway_stage.transaction_stage.invoke_url}/card/{card_id}"
+}

@@ -1,9 +1,13 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
+const sqs = new SQSClient({ region: "us-east-1" });
+
+const NOTIFICATION_QUEUE = process.env.NOTIFICATION_QUEUE_URL;
 
 export const handler = async (event) => {
 
@@ -28,6 +32,20 @@ export const handler = async (event) => {
             TableName: process.env.CARD_TABLE,
             Item: card
         }));
+        
+        await sqs.send(
+            new SendMessageCommand({
+                QueueUrl: NOTIFICATION_QUEUE,
+                MessageBody: JSON.stringify({
+                    type: "CARD.CREATE",
+                    data: {
+                        date: card.createdAt,
+                        type: card.type,
+                        amount: card.balance,
+                        email: "kbuelvas899@gmail.com"
+                    }
+                })
+            })
+        );
     }
-
 };

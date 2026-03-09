@@ -49,16 +49,19 @@ resource "aws_api_gateway_deployment" "transaction_deployment" {
       aws_api_gateway_resource.card_activate.id,
       aws_api_gateway_resource.card_pay.id,
       aws_api_gateway_resource.card_pay_card_id.id,
+      aws_api_gateway_resource.card_report_card_id.id,
 
       aws_api_gateway_method.transaction_post.id,
       aws_api_gateway_method.purchase_post.id,
       aws_api_gateway_method.card_activate_post.id,
       aws_api_gateway_method.card_pay_post.id,
+      aws_api_gateway_method.card_report_get.id,
 
       aws_api_gateway_integration.transaction_integration.id,
       aws_api_gateway_integration.purchase_integration.id,
       aws_api_gateway_integration.card_activate_integration.id,
       aws_api_gateway_integration.card_pay_integration.id,
+      aws_api_gateway_integration.card_report_integration.id,
     ]))
   }
 
@@ -172,4 +175,29 @@ resource "aws_api_gateway_integration" "card_pay_integration" {
   type = "AWS_PROXY"
   
   uri = aws_lambda_function.card_paid_credit_card_lambda.invoke_arn
+}
+
+//Report
+resource "aws_api_gateway_resource" "card_report_card_id" {
+  rest_api_id = aws_api_gateway_rest_api.transaction_api.id
+  parent_id = aws_api_gateway_resource.card.id
+  path_part = "{card_id}"
+}
+
+resource "aws_api_gateway_method" "card_report_get" {
+  rest_api_id   = aws_api_gateway_rest_api.transaction_api.id
+  resource_id   = aws_api_gateway_resource.card_report_card_id.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "card_report_integration" {
+  rest_api_id = aws_api_gateway_rest_api.transaction_api.id
+  resource_id = aws_api_gateway_resource.card_report_card_id.id
+  http_method = aws_api_gateway_method.card_report_get.http_method
+
+  integration_http_method = "POST"
+  type = "AWS_PROXY"
+
+  uri = aws_lambda_function.card_get_report_lambda.invoke_arn
 }

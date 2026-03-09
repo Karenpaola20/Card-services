@@ -46,6 +46,13 @@ resource "aws_iam_role_policy" "card_lambda_policy" {
                 "sqs:GetQueueAttributes",
                 "sqs:SendMessage"
             ]
+            Resource = aws_sqs_queue.create_request_card_sqs.arn
+        },
+        {
+            Effect = "Allow"
+            Action = [
+                "sqs:SendMessage"
+            ]
             Resource = "arn:aws:sqs:us-east-1:537236557851:notification-email-sqs"
         },
         {

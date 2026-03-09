@@ -15,6 +15,7 @@ resource "aws_lambda_function" "card_approval_worker" {
     variables = {
       CARD_TABLE = aws_dynamodb_table.card_table.name
       TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
+      NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
     }
   }
 }
@@ -158,6 +159,36 @@ resource "aws_lambda_permission" "card_paid_permission" {
   statement_id = "AllowAPIGatewayInvokeCardPaid"
   action = "lambda:InvokeFunction"
   function_name = aws_lambda_function.card_paid_credit_card_lambda.function_name
+  principal = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
+}
+
+//Report
+resource "aws_lambda_function" "card_get_report_lambda" {
+  function_name = "card-get-report-lambda"
+  role = aws_iam_role.card_lambda_role.arn
+
+  handler = "index.handler"
+  runtime = "nodejs20.x"
+
+  timeout = 15
+
+  filename = "${path.module}/lambdas/card-get-report-lambda/card-get-report.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambdas/card-get-report-lambda/card-get-report.zip")
+
+  environment {
+    variables = {
+      TRANSACTION_TABLE = aws_dynamodb_table.transaction_table.name
+      NOTIFICATION_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/537236557851/notification-email-sqs"
+    }
+  }
+}
+
+resource "aws_lambda_permission" "card_get_report_permission" {
+  statement_id = "AllowAPIGatewayInvokeCardReport"
+  action = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.card_get_report_lambda.function_name
   principal = "apigateway.amazonaws.com"
 
   source_arn = "${aws_api_gateway_rest_api.transaction_api.execution_arn}/*/*"
